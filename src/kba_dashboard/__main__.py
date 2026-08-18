@@ -1,11 +1,12 @@
 from .scraper import KBAScraper
-from .config import fz11
+from .config import fz11, BASE_URL
 
 
-client = KBAScraper()
-print(client.discover_files(fz11))
 
 def main() -> None:
-    print("Hello from kba-dashboard!")
+    client = KBAScraper()
+    files = client.discover_files(fz11)
+    print("Files: ", files)
+    client.download_files(BASE_URL, files)
 
 main()
