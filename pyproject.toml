@@ -4,11 +4,16 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "beautifulsoup4>=4.15.0",
+    "pydantic>=2.13.4",
+    "regex>=2026.7.19",
+    "requests>=2.34.2",
+]
 
 [project.scripts]
 kba-dashboard = "kba_dashboard:main"
 
 [build-system]
-requires = ["uv_build>=0.12.4,<0.13.0"]
-build-backend = "uv_build"
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
