@@ -29,7 +29,7 @@ class KBAScraper:
         kba_elements = soup.find_all("a", class_="c-publication")
 
         for element in kba_elements:
-            if re.search(product.filename_pattern, element["href"]):
+            if re.match(product.filename_pattern, element["href"]):
                 text = next(child.strip() for child in element.children if isinstance(child, NavigableString) and child.strip())
                 download_path = element["href"]
                 kba_files_list.append(KBA_File(text=text, download_path=download_path))
