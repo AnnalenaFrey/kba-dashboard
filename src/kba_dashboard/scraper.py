@@ -1,7 +1,8 @@
 import requests
 from bs4 import BeautifulSoup, NavigableString
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 import regex as re
+from pathlib import Path
 from .models.pydantic_models import Product, KBA_File
 
 
@@ -29,12 +30,14 @@ class KBAScraper:
         kba_elements = soup.find_all("a", class_="c-publication")
 
         for element in kba_elements:
-            if re.match(product.filename_pattern, element["href"]):
-                text = next(child.strip() for child in element.children if isinstance(child, NavigableString) and child.strip())
-                download_path = element["href"]
-                kba_files_list.append(KBA_File(text=text, download_path=download_path))
-            else:
-                pass
+            if not re.match(product.filename_pattern, element["href"]):
+                continue
+
+            text = next(child.strip() for child in element.children if isinstance(child, NavigableString) and child.strip())
+            download_path = element["href"]
+            filename = Path(urlparse(download_path).path).name
+
+            kba_files_list.append(KBA_File(text=text, download_path=download_path, filename=filename))
 
         return kba_files_list
 
