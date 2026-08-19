@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: postgres:18
+    ports: 
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: password
+  pgadmin:
+    image: dpage/pgadmin4
+    ports:
+      - 8080:80
+    environment:
+      PGADMIN_DEFAULT_EMAIL: user@example.com
+      PGADMIN_DEFAULT_PASSWORD: password1234

@@ -4,6 +4,7 @@ from urllib.parse import urljoin, urlparse
 import regex as re
 from pathlib import Path
 from .models.pydantic_models import Product, KBA_File
+from .storage import Storage
 
 
 class KBAScraper:
@@ -41,9 +42,12 @@ class KBAScraper:
 
         return kba_files_list
 
-    def download_files(self, base_url: str, kba_files_list: list[KBA_File]) -> None:
+    def download_files(self, base_url: str, kba_files_list: list[KBA_File], storage: Storage) -> None:
 
         for element in kba_files_list:
             download_url = urljoin(base_url, element.download_path)
 
-            print(download_url)
+            response = self._get(download_url)
+
+            storage.save(element.filename, response)
+
