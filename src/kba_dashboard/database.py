@@ -1,8 +1,6 @@
 from psycopg_pool import ConnectionPool
+from psycopg.connection import Connection
 from abc import ABC, abstractmethod
-
-
-connection_string = "postgresql://postgres:password@localhost:5432"
 
 
 class DatabaseAdapter(ABC):
@@ -11,25 +9,62 @@ class DatabaseAdapter(ABC):
     def __init__(self, connection_string: str) -> None:
         pass
 
+    @abstractmethod
+    def open(self):
+        pass
+
+    @abstractmethod
+    def close(self):
+        pass
+
 
 class PostgresAdapter(DatabaseAdapter):
 
     def __init__(self, connection_string: str):
-        self.pool = ConnectionPool(conninfo=connection_string, check=ConnectionPool.check_connection)
+        self.pool = ConnectionPool(conninfo=connection_string, check=ConnectionPool.check_connection, open=False)
+        self.schema = "kba_dashboard"
 
+    def open(self):
+        self.pool.open()
+        with self.pool.connection() as conn:
+            table_names = [
+                            "fz11_raw",
+                            "fz11_processed"
+                        ]
+            self.create_schema(conn, self.schema)
+            self.create_all_tables(conn)
 
-with psycopg.connect(connection_string) as conn:
-    with conn.cursor() as cur:
-        cur.execute("""
-            CREATE TABLE items (
-                id int PRIMARY KEY,
-                num int,
-                item text)
-            """)
+    def close(self):
+        self.pool.close()
 
-        cur.execute("""
-            INSERT INTO items (id, num, item)
-            VALUES (%s, %s, %s) 
-        """,
-        (5, 1, "Banane")
-        )
+    def create_schema(self, conn: Connection, schema_name: str):
+        with conn.cursor() as cur:
+            cur.execute(
+                f"""
+                CREATE SCHEMA IF NOT EXISTS {schema_name}
+            """
+            )
+
+    def create_all_tables(self, conn: Connection):
+        with conn.cursor() as cur:
+            cur.execute(
+                f"""
+                CREATE TABLE IF NOT EXISTS {self.schema}.fz11_raw (
+                    id int PRIMARY KEY,
+                    name text)
+            """
+            )
+
+            cur.execute(
+                f"""
+                CREATE TABLE IF NOT EXISTS {self.schema}.fz11_processed(
+                    id int PRIMARY KEY,
+                    name text)
+                """
+            )
+
+if __name__ == "__main__":
+    connection_string = "postgresql://postgres:password@localhost:5432"
+    db = PostgresAdapter(connection_string=connection_string)
+    db.open()
+    db.close()
