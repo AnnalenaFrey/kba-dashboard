@@ -50,16 +50,22 @@ class PostgresAdapter(DatabaseAdapter):
             cur.execute(
                 f"""
                 CREATE TABLE IF NOT EXISTS {self.schema}.fz11_raw (
-                    id int PRIMARY KEY,
-                    name text)
+                    id UUID PRIMARY KEY DEFAULT uuidv4(),
+                    filename text,
+                    year int,
+                    month int,
+                    storage_location text,
+                    downloaded_at timestamptz DEFAULT now()
+                )
             """
             )
 
             cur.execute(
                 f"""
                 CREATE TABLE IF NOT EXISTS {self.schema}.fz11_processed(
-                    id int PRIMARY KEY,
-                    name text)
+                    id UUID PRIMARY KEY DEFAULT uuidv4(),
+                    name text
+                    )
                 """
             )
 
