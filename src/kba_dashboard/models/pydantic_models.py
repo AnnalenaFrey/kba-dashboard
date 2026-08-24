@@ -6,7 +6,10 @@ class Product(BaseModel):
     url: HttpUrl
     filename_pattern: str
 
-class KBA_File(BaseModel):
+class KBAFile(BaseModel):
     text: str
     download_path: str
     filename: str
+    year: int
+    month: int
+    storage_path: str | None

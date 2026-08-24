@@ -5,14 +5,14 @@ import requests
 class Storage(ABC):
 
     @abstractmethod
-    def save(self, file: str):
+    def save(self, file: str, response: requests.Response):
         pass
 
 class LocalStorage(Storage):
     def __init__(self, root: Path):
         self.root = root
 
-    def save(self, file: str, response: requests.Response) -> None:
+    def save(self, file: str, response: requests.Response) -> Path:
         path = self.root / file
 
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -21,4 +21,6 @@ class LocalStorage(Storage):
             for chunk in response.iter_content(chunk_size=8192):
                 if chunk:
                     f.write(chunk)
+
+        return path
                     
