@@ -1,6 +1,7 @@
 from psycopg_pool import ConnectionPool
 from psycopg.connection import Connection
 from abc import ABC, abstractmethod
+from .models.pydantic_models import KBAFile
 
 
 class DatabaseAdapter(ABC):
@@ -54,6 +55,7 @@ class PostgresAdapter(DatabaseAdapter):
                     filename text,
                     year int,
                     month int,
+                    download_path text,
                     storage_location text,
                     downloaded_at timestamptz DEFAULT now()
                 )
@@ -68,6 +70,18 @@ class PostgresAdapter(DatabaseAdapter):
                     )
                 """
             )
+
+    def save_raw_document(self, file: KBAFile) :
+        with self.pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"""
+                    INSERT INTO {self.schema}.fz11_raw (filename, year, month, download_path, storage_location)
+                    VALUES (%s, %s, %s, %s, %s)
+                """,
+                (file.filename, file.year, file.month, file.download_path, file.storage_path)
+            )
+
 
 if __name__ == "__main__":
     connection_string = "postgresql://postgres:password@localhost:5432"
