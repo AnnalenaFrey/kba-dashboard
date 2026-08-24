@@ -9,6 +9,10 @@ def main() -> None:
     client = KBAScraper()
     storage = LocalStorage(Path("downloads"))
     files = client.discover_files(fz11)
-    client.download_files(BASE_URL, files, storage)
+
+    print(files)
+
+    for file in files:
+        client.download_file(BASE_URL, file, storage)
 
 main()
