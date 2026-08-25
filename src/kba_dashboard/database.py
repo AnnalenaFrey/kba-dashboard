@@ -71,7 +71,7 @@ class PostgresAdapter(DatabaseAdapter):
                 """
             )
 
-    def save_raw_document(self, file: KBAFile) :
+    def save_raw_document(self, file: KBAFile):
         with self.pool.connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
@@ -81,6 +81,22 @@ class PostgresAdapter(DatabaseAdapter):
                 """,
                 (file.filename, file.year, file.month, file.download_path, file.storage_path)
             )
+
+    def check_if_file_exists(self, download_path: str):
+        with self.pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"""
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM {self.schema}.fz11_raw
+                        WHERE
+                            download_path = (%s)
+                    )
+                """,
+                (download_path,)
+                )
+                return cur.fetchone()[0]
 
 
 if __name__ == "__main__":

@@ -10,8 +10,6 @@ from .models.pydantic_models import Product
 def main() -> None:
     load_dotenv()
     config = load_config()
-    print(config)
-
 
     client = KBAScraper()
     storage = LocalStorage(Path("downloads"))
@@ -22,8 +20,13 @@ def main() -> None:
     files = client.discover_files(Product(**config["products"]["fz11"]))
 
     for file in files:
+        if db.check_if_file_exists(download_path=file.download_path):
+            print(f"File '{file.filename}' already downloaded, therefore skipping ...")
+            continue
+
         file.storage_path = client.download_file(config["base_url"], file, storage)
         db.save_raw_document(file)
+        print(f"Successfully downloaded file {file.filename} at {file.storage_path}")
 
     db.close()
 
