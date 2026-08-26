@@ -1,5 +1,5 @@
 from pydantic import BaseModel, HttpUrl
-from pathlib import Path
+from uuid import UUID
 
 class Product(BaseModel):
     name: str
@@ -7,6 +7,7 @@ class Product(BaseModel):
     filename_pattern: str
 
 class KBAFile(BaseModel):
+    id: UUID | None
     text: str
     download_path: str
     filename: str

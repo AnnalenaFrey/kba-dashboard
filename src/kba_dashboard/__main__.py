@@ -25,7 +25,7 @@ def main() -> None:
             continue
 
         file.storage_path = client.download_file(config["base_url"], file, storage)
-        db.save_raw_document(file)
+        db.save_raw_file(file)
         print(f"Successfully downloaded file {file.filename} at {file.storage_path}")
 
     db.close()

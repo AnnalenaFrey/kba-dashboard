@@ -71,18 +71,19 @@ class PostgresAdapter(DatabaseAdapter):
                 """
             )
 
-    def save_raw_document(self, file: KBAFile):
+    def save_raw_file(self, file: KBAFile):
         with self.pool.connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
                     f"""
-                    INSERT INTO {self.schema}.fz11_raw (filename, year, month, download_path, storage_location)
-                    VALUES (%s, %s, %s, %s, %s)
+                    INSERT INTO {self.schema}.fz11_raw (id, filename, year, month, download_path, storage_location)
+                    VALUES (%s, %s, %s, %s, %s, %s)
                 """,
-                (file.filename, file.year, file.month, file.download_path, file.storage_path)
+                (file.id, file.filename, file.year, file.month, file.download_path, file.storage_path)
             )
+                return cur.fetchone()[0]
 
-    def check_if_file_exists(self, download_path: str):
+    def check_if_file_exists(self, download_path: str) -> bool:
         with self.pool.connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
@@ -91,12 +92,23 @@ class PostgresAdapter(DatabaseAdapter):
                         SELECT 1
                         FROM {self.schema}.fz11_raw
                         WHERE
-                            download_path = (%s)
+                            download_path = %s
                     )
                 """,
                 (download_path,)
                 )
                 return cur.fetchone()[0]
+
+    def delete_raw_file(self, filename: str):
+        with self.pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"""
+                    DELETE FROM {self.schema}.fz11_raw
+                    WHERE filename = %s
+                """,
+                (filename,)
+                )
 
 
 if __name__ == "__main__":
