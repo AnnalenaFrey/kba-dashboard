@@ -18,6 +18,7 @@ def find_config_file():
 def load_config():
     config_path = find_config_file()
     parsed_config = parse_config(config_path)
+    print(f"Successfully loaded config file from '{config_path}'")
 
     return parsed_config
 

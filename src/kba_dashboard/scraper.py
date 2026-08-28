@@ -41,7 +41,7 @@ class KBAScraper:
             year = int(match.group(1))
             month = int(match.group(2))
 
-            kba_files_list.append(KBAFile(text=text, download_path=download_path, filename=filename, year=year, month=month, storage_path=None))
+            kba_files_list.append(KBAFile(id=None, text=text, download_path=download_path, filename=filename, year=year, month=month, storage_location=None))
 
         return kba_files_list
 

@@ -4,7 +4,7 @@ from .storage import LocalStorage
 from pathlib import Path
 from .database import PostgresAdapter
 from dotenv import load_dotenv
-from .models.pydantic_models import Product
+from .models.pydantic_models import Product, KBAFile
 
 
 def main() -> None:
@@ -24,9 +24,10 @@ def main() -> None:
             print(f"File '{file.filename}' already downloaded, therefore skipping ...")
             continue
 
-        file.storage_path = client.download_file(config["base_url"], file, storage)
-        db.save_raw_file(file)
-        print(f"Successfully downloaded file {file.filename} at {file.storage_path}")
+        file.storage_location = client.download_file(config["base_url"], file, storage)
+        raw_saved = db.save_raw_file(file)
+        file_saved = KBAFile(**raw_saved)
+        print(f"Successfully downloaded file '{file_saved.filename}' with ID '{file_saved.id}' at '{file_saved.storage_location}'")
 
     db.close()
 
