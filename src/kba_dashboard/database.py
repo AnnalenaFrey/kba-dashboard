@@ -2,6 +2,7 @@ from psycopg_pool import ConnectionPool
 from psycopg.connection import Connection
 from abc import ABC, abstractmethod
 from .models.pydantic_models import KBAFile
+from psycopg.rows import dict_row
 
 
 class DatabaseAdapter(ABC):
@@ -53,6 +54,7 @@ class PostgresAdapter(DatabaseAdapter):
                 CREATE TABLE IF NOT EXISTS {self.schema}.fz11_raw (
                     id UUID PRIMARY KEY DEFAULT uuidv4(),
                     filename text,
+                    text text,
                     year int,
                     month int,
                     download_path text,
@@ -71,20 +73,56 @@ class PostgresAdapter(DatabaseAdapter):
                 """
             )
 
-    def save_raw_document(self, file: KBAFile) :
+    def save_raw_file(self, file: KBAFile):
+        with self.pool.connection() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(
+                    f"""
+                    INSERT INTO {self.schema}.fz11_raw (filename, text, year, month, download_path, storage_location)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    RETURNING *
+                """,
+                (file.filename,file.text, file.year, file.month, file.download_path, file.storage_location)
+            )
+                return cur.fetchone()
+
+    def check_if_file_exists(self, download_path: str) -> bool:
         with self.pool.connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
                     f"""
-                    INSERT INTO {self.schema}.fz11_raw (filename, year, month, download_path, storage_location)
-                    VALUES (%s, %s, %s, %s, %s)
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM {self.schema}.fz11_raw
+                        WHERE
+                            download_path = %s
+                    )
                 """,
-                (file.filename, file.year, file.month, file.download_path, file.storage_path)
-            )
+                (download_path,)
+                )
+                return cur.fetchone()[0]
+
+    def delete_raw_file(self, filename: str):
+        with self.pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"""
+                    DELETE FROM {self.schema}.fz11_raw
+                    WHERE filename = %s
+                """,
+                (filename,)
+                )
 
 
 if __name__ == "__main__":
     connection_string = "postgresql://postgres:password@localhost:5432"
     db = PostgresAdapter(connection_string=connection_string)
     db.open()
+
+    download_path = "/SharedDocs/Downloads/DE/Statistik/Fahrzeuge/FZ11/fz11_2025_12.xlsx?__blob=publicationFile&v=2"
+    print(f"Exists before: ", db.check_if_file_exists(download_path=download_path))
+
+    db.delete_raw_file(filename="fz11_2025_12.xlsx")
+
+    print(f"Exists after: ", db.check_if_file_exists(download_path=download_path))
     db.close()

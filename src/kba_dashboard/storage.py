@@ -8,6 +8,10 @@ class Storage(ABC):
     def save(self, file: str, response: requests.Response):
         pass
 
+    @abstractmethod
+    def delete(self, file: str):
+        pass
+
 class LocalStorage(Storage):
     def __init__(self, root: Path):
         self.root = root
@@ -23,4 +27,12 @@ class LocalStorage(Storage):
                     f.write(chunk)
 
         return path
+
+    def delete(self, file: str):
+        file_to_remove_path = Path(file)
+        try:
+            file_to_remove_path.unlink()
+            print(f"Successfully deleted file '{file}'")
+        except FileNotFoundError:
+            raise FileNotFoundError(f"File '{file}' not found")
                     
