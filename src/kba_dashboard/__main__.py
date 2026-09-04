@@ -12,7 +12,7 @@ def main() -> None:
     config = load_config()
 
     client = KBAScraper()
-    storage = LocalStorage(Path("downloads"))
+    storage = LocalStorage("downloads")
     db = PostgresAdapter(connection_string=config["postgres_connection_string"])
 
     db.open()
