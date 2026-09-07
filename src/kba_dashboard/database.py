@@ -101,8 +101,6 @@ class PostgresAdapter(DatabaseAdapter):
                 """
             )
 
-
-
     async def save_raw_file(self, file: KBAFile):
         async with self.apool.connection() as conn:
             async with conn.cursor(row_factory=dict_row) as cur:
