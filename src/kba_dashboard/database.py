@@ -55,14 +55,15 @@ class PostgresAdapter(DatabaseAdapter):
                 SELECT EXISTS(
                     SELECT * 
                     FROM INFORMATION_SCHEMA.TABLES
-                    WHERE TABLE_SCHEMA = {self.schema}
-                    AND TABLE_NAME = {table_name}
+                    WHERE TABLE_SCHEMA = %s
+                    AND TABLE_NAME = %s
                 )
-            """
+            """,
+            (self.schema, table_name)
             )
             exists = await cur.fetchone()
             if exists is not None:
-                return exists
+                return exists[0]
             else:
                 return False
 
