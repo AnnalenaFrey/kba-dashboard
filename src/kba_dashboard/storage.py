@@ -13,8 +13,8 @@ class Storage(ABC):
         pass
 
 class LocalStorage(Storage):
-    def __init__(self, root: Path):
-        self.root = root
+    def __init__(self, root: str):
+        self.root = Path(root)
 
     def save(self, file: str, response: requests.Response) -> Path:
         path = self.root / file
