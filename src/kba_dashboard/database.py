@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from psycopg.rows import dict_row
 import asyncio
 
-from .models.pydantic_models import KBAFile
+from .models.pydantic_models import KBAFile, FZ11Record
 
 
 class DatabaseAdapter(ABC):
@@ -96,12 +96,20 @@ class PostgresAdapter(DatabaseAdapter):
                 f"""
                 CREATE TABLE IF NOT EXISTS {self.schema}.fz11_processed(
                     id UUID PRIMARY KEY DEFAULT uuidv4(),
-                    name text
+                    segment text,
+                    model_series text,
+                    brand text,
+                    model text,
+                    car_registrations int,
+                    commercial_share float,
+                    year int,
+                    month int,
+                    raw_file_id UUID REFERENCES {self.schema}.fz11_raw (id) ON DELETE CASCADE
                     )
                 """
             )
 
-    async def save_raw_file(self, file: KBAFile):
+    async def save_raw_file(self, file: KBAFile) -> dict:
         async with self.apool.connection() as conn:
             async with conn.cursor(row_factory=dict_row) as cur:
                 await cur.execute(
@@ -113,6 +121,38 @@ class PostgresAdapter(DatabaseAdapter):
                 (file.filename,file.text, file.year, file.month, file.download_path, file.storage_location)
             )
                 return await cur.fetchone()
+
+    async def save_processed_records(self, records: list[FZ11Record]):
+
+        values = [
+        (r.segment, r.model_series, r.brand, r.model, r.car_registrations, r.commercial_share, r.year, r.month, r.raw_file_id)
+        for r in records
+    ]
+
+        async with self.apool.connection() as conn:
+            async with conn.cursor() as cur:
+                await cur.executemany(
+                    f"""
+                    INSERT INTO {self.schema}.fz11_processed (segment, model_series, brand, model, car_registrations, commercial_share, year, month, raw_file_id)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                values,
+            )
+
+    async def get_raw_files(self) -> list[dict]:
+        async with self.apool.connection() as conn:
+            async with conn.cursor(row_factory=dict_row) as cur:
+                await cur.execute(
+                    f"""
+                    SELECT * FROM {self.schema}.fz11_raw
+                    WHERE filename like '%.xlsx'
+                    AND NOT EXISTS (
+                        SELECT 1 FROM {self.schema}.fz11_processed
+                        WHERE fz11_processed.raw_file_id = fz11_raw.id
+                    )
+                    """
+                )
+                return await cur.fetchall()
 
     async def check_if_file_exists(self, download_path: str) -> bool:
         async with self.apool.connection() as conn:

@@ -16,8 +16,11 @@ def get_storage(request: Request) -> LocalStorage:
 def get_scraper(request: Request) -> KBAScraper:
     return request.app.state.scraper
 
-def get_scrape_status(request: Request)-> dict:
+def get_scrape_status(request: Request) -> dict:
     return request.app.state.scrape_status
+
+def get_processing_status(request: Request) -> dict:
+    return request.app.state.processing_status
 
 @lru_cache
 def get_config() -> dict:

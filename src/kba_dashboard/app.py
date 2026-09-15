@@ -2,12 +2,12 @@ from fastapi import FastAPI, BackgroundTasks, Depends
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
-from .dependecies import get_database, get_scraper, get_storage, get_scrape_status, get_config, get_product, get_base_url
+from .dependecies import get_database, get_scraper, get_storage, get_scrape_status, get_config, get_product, get_base_url, get_processing_status
 from .config import load_config
 from .database import PostgresAdapter
 from .storage import LocalStorage
 from .scraper import KBAScraper
-from .service import download_and_save_all
+from .service import download_and_save_all, process_all_files
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -26,6 +26,8 @@ async def lifespan(app: FastAPI):
     # Create KBAScraper
     app.state.scraper = KBAScraper()
     app.state.scrape_status = {"state": "idle", "result": None, "error": None}
+
+    app.state.processing_status = {"state": "idle", "result": None, "error": None}
 
     yield
     await db.close()
@@ -53,4 +55,20 @@ async def download_all_files(background_tasks: BackgroundTasks,
                               product=product,
                               base_url=base_url,
                               status=status)
-    return {"status": "Started scraping process"}
+    return {"status": "Started scraping process..."}
+
+@app.get("/files/status")
+async def download_status(status:dict = Depends(get_scrape_status)):
+    return status
+
+@app.post("/process")
+async def process_files(background_tasks: BackgroundTasks,
+                        db = Depends(get_database),
+                        status: dict = Depends(get_processing_status)
+                        ):
+    background_tasks.add_task(process_all_files, db, status)
+    return {"status": "Started processing files..."}
+
+@app.get("/process/status")
+async def process_status(status:dict = Depends(get_processing_status)):
+    return status

@@ -16,3 +16,15 @@ class KBAFile(BaseModel):
     month: int
     storage_location: str | None = None
     downloaded_at: datetime | None = None
+
+class FZ11Record(BaseModel):
+    id: UUID | None = None
+    segment: str
+    model_series: str
+    brand: str
+    model: str | None
+    car_registrations: int
+    commercial_share: float | None
+    year: int
+    month: int
+    raw_file_id: UUID
