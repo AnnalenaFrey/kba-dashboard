@@ -28,3 +28,14 @@ class FZ11Record(BaseModel):
     year: int
     month: int
     raw_file_id: UUID
+
+class QuarterPeriod(BaseModel):
+    year: int
+    quarter: int
+    total: int
+
+class QuarterComparison(BaseModel):
+    period1: QuarterPeriod
+    period2: QuarterPeriod
+    absolute_diff: int
+    percentage_diff: float | None

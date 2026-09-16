@@ -180,3 +180,19 @@ class PostgresAdapter(DatabaseAdapter):
                 """,
                 (filename,)
                 )
+
+    async def get_quaterly_total(self, year: int, quarter: int) -> int:
+        start_month = (quarter - 1) * 3 + 1
+        end_month = start_month + 2
+
+        async with self.apool.connection() as conn:
+            async with conn.cursor() as cur:
+                await cur.execute(
+                    f"""
+                    SELECT SUM(car_registrations)
+                    FROM {self.schema}.fz11_processed
+                    WHERE year = %s AND month BETWEEN %s AND %s
+                """,
+                (year, start_month, end_month)
+                )
+                return (await cur.fetchone())[0]
