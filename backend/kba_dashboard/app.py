@@ -76,7 +76,7 @@ async def process_files(background_tasks: BackgroundTasks,
 async def process_status(status:dict = Depends(get_processing_status)):
     return status
 
-@app.get("/analytics/quaterly")
+@app.get("/analytics/quarterly")
 async def quaterly_comparison(year1: Annotated[int, Query(description="First year you want to compare")], 
                               quarter1: Annotated[int, Query(description="First quater you want to compare")], 
                               year2: Annotated[int, Query(description="Second year you want to compare")], 
@@ -86,10 +86,10 @@ async def quaterly_comparison(year1: Annotated[int, Query(description="First yea
     total_period2 = await db.get_quaterly_total(year=year2, quarter=quarter2)
 
     if total_period1 == None or total_period2 == None:
-        return HTTPException(status_code=404, detail="No data found for one or more requested periods.")
+        raise HTTPException(status_code=404, detail="No data found for one or more requested periods.")
 
     diff = total_period2 - total_period1
-    pct = (diff / total_period1) * 100 if total_period1 > 1 else None
+    pct = (diff / total_period1) * 100 if total_period1 > 0 else None
     return QuarterComparison(
         period1=QuarterPeriod(year=year1, quarter=quarter1, total=total_period1),
         period2 = QuarterPeriod(year=year2, quarter=quarter2, total=total_period2),
