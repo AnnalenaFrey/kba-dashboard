@@ -1,0 +1,7 @@
+postgres_connection_string: "postgresql://postgres@localhost:5432"
+base_url: "https://www.kba.de"
+products:
+  fz11:
+    name: "fz11"
+    url: "https://www.kba.de/DE/Statistik/Produktkatalog/produkte/Fahrzeuge/fz11/fz11_gentab.html"
+    filename_pattern: '.*fz11_(\d{4})_(\d{2}).*(?:xlsx|xls).*'
