@@ -11,6 +11,12 @@ MULTI_WORD_BRANDS = [
         "CUPRA", "OPEL/VAUXHALL"
     ]
 
+KNOWN_BRAND_TYPOS ={
+    "MECEDES": "MERCEDES",
+    "SONSTGIE": "SONSTIGE",
+    "XSONSTIGE": "SONSTIGE"
+}
+
 def extract_brand_and_model(model_series: str) -> tuple[str | None, str | None]:
 
     if pd.isna(model_series):
@@ -37,8 +43,8 @@ def extract_brand_and_model(model_series: str) -> tuple[str | None, str | None]:
     brand = parts[0]
 
     # Small fix for a common typo in the excel files
-    if brand == "MECEDES":
-        brand = "MERCEDES"
+    if brand in KNOWN_BRAND_TYPOS:
+        brand = KNOWN_BRAND_TYPOS[brand]
 
     # Second part of the string is considered to be the model name
     # Only if the string is longer than 1 word, otherwise the model name is None
@@ -63,7 +69,7 @@ def read_excel(file: KBAFile) -> list[FZ11Record]:
 
     # Fill all segment rows with the segment name since
     # only the first row has the segment, and the others are empty
-    df["segment"] = df["segment"].ffill()
+    df["segment"] = df["segment"].ffill().str.strip().str.upper()
     df["car_registrations"] = pd.to_numeric(df["car_registrations"], errors="coerce")
     df["commercial_share"] = pd.to_numeric(df["commercial_share"], errors="coerce")
 
