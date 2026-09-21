@@ -86,7 +86,7 @@ async def quaterly_comparison(year1: Annotated[int, Query(description="First yea
     total_period2 = await db.get_quaterly_total(year=year2, quarter=quarter2)
 
     if total_period1 == None or total_period2 == None:
-        return HTTPException(status_code=404, detail="No data found for one or more requested periods.")
+        raise HTTPException(status_code=404, detail="No data found for one or more requested periods.")
 
     diff = total_period2 - total_period1
     pct = (diff / total_period1) * 100 if total_period1 > 1 else None
@@ -96,6 +96,15 @@ async def quaterly_comparison(year1: Annotated[int, Query(description="First yea
         absolute_diff=diff,
         percentage_diff = pct
     )
+
+@app.get("/analytics/timeseries/")
+async def time_series(segment: Annotated[str,Query(description="Segment")] = None, 
+                      brand: Annotated[str, Query(description="Brand")] = None,
+                      db: PostgresAdapter = Depends(get_database)):
+
+    result = await db.get_time_series(segment=segment, brand=brand)
+    print(result)
+    return result
 
 
     

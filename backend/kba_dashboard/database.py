@@ -196,3 +196,40 @@ class PostgresAdapter(DatabaseAdapter):
                 (year, start_month, end_month)
                 )
                 return (await cur.fetchone())[0]
+
+    async def get_time_series(self, segment: str | None, brand: str | None) -> list[dict]:
+        columns = ["year", "month"]
+
+        conditions = [
+            "make_date(year, month, 1) >= "
+            f"(select max(make_date(year, month, 1)) from {self.schema}.fz11_processed)"
+            "- interval '11 months'"
+        ]
+        params = []
+
+        if segment is not None:
+            columns.append("segment")
+            conditions.append("segment = %s")
+            params.append(segment)
+
+        if brand is not None:
+            columns.append("brand")
+            conditions.append("brand = %s")
+            params.append(brand)
+
+        select_clause = ", ".join(columns)
+        where_clause = " AND ".join(conditions)
+
+        query = f"""
+            SELECT {select_clause}, SUM(car_registrations) as total_car_registrations
+            FROM {self.schema}.fz11_processed
+            WHERE {where_clause}
+            GROUP BY {select_clause}
+            ORDER BY year DESC, month DESC
+        """
+
+        async with self.apool.connection() as conn:
+            async with conn.cursor(row_factory=dict_row) as cur:
+                await cur.execute(query, params)
+                return await cur.fetchall()
+        
