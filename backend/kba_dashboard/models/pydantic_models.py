@@ -39,3 +39,10 @@ class QuarterComparison(BaseModel):
     period2: QuarterPeriod
     absolute_diff: int
     percentage_diff: float | None
+
+class TimeSeriesEntry(BaseModel):
+    year: int
+    month: int
+    segment: str | None = None
+    brand: str | None = None
+    total_car_registrations: int

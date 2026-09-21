@@ -10,7 +10,7 @@ from .database import PostgresAdapter
 from .storage import LocalStorage
 from .scraper import KBAScraper
 from .service import download_and_save_all, process_all_files
-from .models.pydantic_models import QuarterPeriod, QuarterComparison
+from .models.pydantic_models import QuarterPeriod, QuarterComparison, TimeSeriesEntry
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -97,14 +97,11 @@ async def quaterly_comparison(year1: Annotated[int, Query(description="First yea
         percentage_diff = pct
     )
 
-@app.get("/analytics/timeseries/")
+@app.get("/analytics/timeseries/", response_model=list[TimeSeriesEntry])
 async def time_series(segment: Annotated[str,Query(description="Segment")] = None, 
                       brand: Annotated[str, Query(description="Brand")] = None,
                       db: PostgresAdapter = Depends(get_database)):
-
-    result = await db.get_time_series(segment=segment, brand=brand)
-    print(result)
-    return result
-
+    
+    return await db.get_time_series(segment=segment, brand=brand)
 
     
