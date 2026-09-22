@@ -104,4 +104,11 @@ async def time_series(segment: Annotated[str,Query(description="Segment")] = Non
     
     return await db.get_time_series(segment=segment, brand=brand)
 
-    
+
+@app.get("/analytics/brands")
+async def get_brands(db: PostgresAdapter = Depends(get_database)):
+    return await db.get_brands()
+
+@app.get("/analytics/segments")
+async def get_segments(db: PostgresAdapter = Depends(get_database)):
+    return await db.get_segments()

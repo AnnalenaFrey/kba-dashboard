@@ -1,7 +1,7 @@
 from psycopg_pool import AsyncConnectionPool
 from psycopg.connection_async import AsyncConnection 
 from abc import ABC, abstractmethod
-from psycopg.rows import dict_row
+from psycopg.rows import dict_row, scalar_row
 import asyncio
 
 from .models.pydantic_models import KBAFile, FZ11Record
@@ -232,4 +232,28 @@ class PostgresAdapter(DatabaseAdapter):
             async with conn.cursor(row_factory=dict_row) as cur:
                 await cur.execute(query, params)
                 return await cur.fetchall()
-        
+
+    async def get_brands(self) -> list[str]:
+        async with self.apool.connection() as conn:
+            async with conn.cursor(row_factory=scalar_row) as cur:
+                await cur.execute(
+                    f"""
+                    SELECT DISTINCT brand
+                    FROM {self.schema}.fz11_processed
+                    ORDER BY brand ASC
+                    """
+                )
+                return await cur.fetchall()
+
+    async def get_segments(self) -> list[str]:
+        async with self.apool.connection() as conn:
+            async with conn.cursor(row_factory=scalar_row) as cur:
+                await cur.execute(
+                    f"""
+                    SELECT DISTINCT segment
+                    FROM {self.schema}.fz11_processed
+                    ORDER BY segment ASC
+                    """
+                )
+                return await cur.fetchall()
+             
