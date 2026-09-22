@@ -77,7 +77,7 @@ async def process_status(status:dict = Depends(get_processing_status)):
     return status
 
 @app.get("/analytics/quaterly")
-async def quaterly_comparison(year1: Annotated[int, Query(description="First year you want to compare")], 
+async def quarterly_comparison(year1: Annotated[int, Query(description="First year you want to compare")], 
                               quarter1: Annotated[int, Query(description="First quater you want to compare")], 
                               year2: Annotated[int, Query(description="Second year you want to compare")], 
                               quarter2: Annotated[int, Query(description="Second quarter you want to compare")],
