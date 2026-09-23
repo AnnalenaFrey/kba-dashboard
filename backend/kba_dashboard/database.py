@@ -1,7 +1,7 @@
 from psycopg_pool import AsyncConnectionPool
 from psycopg.connection_async import AsyncConnection 
 from abc import ABC, abstractmethod
-from psycopg.rows import dict_row
+from psycopg.rows import dict_row, scalar_row
 import asyncio
 
 from .models.pydantic_models import KBAFile, FZ11Record
@@ -196,3 +196,64 @@ class PostgresAdapter(DatabaseAdapter):
                 (year, start_month, end_month)
                 )
                 return (await cur.fetchone())[0]
+
+    async def get_time_series(self, segment: str | None, brand: str | None) -> list[dict]:
+        columns = ["year", "month"]
+
+        conditions = [
+            "make_date(year, month, 1) >= "
+            f"(select max(make_date(year, month, 1)) from {self.schema}.fz11_processed)"
+            "- interval '11 months'"
+        ]
+        params = []
+
+        if segment is not None:
+            columns.append("segment")
+            conditions.append("segment = %s")
+            params.append(segment)
+
+        if brand is not None:
+            columns.append("brand")
+            conditions.append("brand = %s")
+            params.append(brand)
+
+        select_clause = ", ".join(columns)
+        where_clause = " AND ".join(conditions)
+
+        query = f"""
+            SELECT {select_clause}, SUM(car_registrations) as total_car_registrations
+            FROM {self.schema}.fz11_processed
+            WHERE {where_clause}
+            GROUP BY {select_clause}
+            ORDER BY year DESC, month DESC
+        """
+
+        async with self.apool.connection() as conn:
+            async with conn.cursor(row_factory=dict_row) as cur:
+                await cur.execute(query, params)
+                return await cur.fetchall()
+
+    async def get_brands(self) -> list[str]:
+        async with self.apool.connection() as conn:
+            async with conn.cursor(row_factory=scalar_row) as cur:
+                await cur.execute(
+                    f"""
+                    SELECT DISTINCT brand
+                    FROM {self.schema}.fz11_processed
+                    ORDER BY brand ASC
+                    """
+                )
+                return await cur.fetchall()
+
+    async def get_segments(self) -> list[str]:
+        async with self.apool.connection() as conn:
+            async with conn.cursor(row_factory=scalar_row) as cur:
+                await cur.execute(
+                    f"""
+                    SELECT DISTINCT segment
+                    FROM {self.schema}.fz11_processed
+                    ORDER BY segment ASC
+                    """
+                )
+                return await cur.fetchall()
+             

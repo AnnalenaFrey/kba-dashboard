@@ -10,7 +10,7 @@ from .database import PostgresAdapter
 from .storage import LocalStorage
 from .scraper import KBAScraper
 from .service import download_and_save_all, process_all_files
-from .models.pydantic_models import QuarterPeriod, QuarterComparison
+from .models.pydantic_models import QuarterPeriod, QuarterComparison, TimeSeriesEntry
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -77,7 +77,7 @@ async def process_status(status:dict = Depends(get_processing_status)):
     return status
 
 @app.get("/analytics/quaterly")
-async def quaterly_comparison(year1: Annotated[int, Query(description="First year you want to compare")], 
+async def quarterly_comparison(year1: Annotated[int, Query(description="First year you want to compare")], 
                               quarter1: Annotated[int, Query(description="First quater you want to compare")], 
                               year2: Annotated[int, Query(description="Second year you want to compare")], 
                               quarter2: Annotated[int, Query(description="Second quarter you want to compare")],
@@ -86,7 +86,7 @@ async def quaterly_comparison(year1: Annotated[int, Query(description="First yea
     total_period2 = await db.get_quaterly_total(year=year2, quarter=quarter2)
 
     if total_period1 == None or total_period2 == None:
-        return HTTPException(status_code=404, detail="No data found for one or more requested periods.")
+        raise HTTPException(status_code=404, detail="No data found for one or more requested periods.")
 
     diff = total_period2 - total_period1
     pct = (diff / total_period1) * 100 if total_period1 > 1 else None
@@ -97,5 +97,18 @@ async def quaterly_comparison(year1: Annotated[int, Query(description="First yea
         percentage_diff = pct
     )
 
-
+@app.get("/analytics/timeseries/", response_model=list[TimeSeriesEntry])
+async def time_series(segment: Annotated[str,Query(description="Segment")] = None, 
+                      brand: Annotated[str, Query(description="Brand")] = None,
+                      db: PostgresAdapter = Depends(get_database)):
     
+    return await db.get_time_series(segment=segment, brand=brand)
+
+
+@app.get("/analytics/brands")
+async def get_brands(db: PostgresAdapter = Depends(get_database)):
+    return await db.get_brands()
+
+@app.get("/analytics/segments")
+async def get_segments(db: PostgresAdapter = Depends(get_database)):
+    return await db.get_segments()
