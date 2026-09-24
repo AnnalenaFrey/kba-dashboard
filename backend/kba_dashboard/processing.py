@@ -73,7 +73,22 @@ def read_excel(file: KBAFile) -> list[FZ11Record]:
     df["car_registrations"] = pd.to_numeric(df["car_registrations"], errors="coerce")
     df["commercial_share"] = pd.to_numeric(df["commercial_share"], errors="coerce")
 
-    # Drop rows where either car_registrations or _model_series is None
+    # Segments that have at least one real model-level row (not just a summary line)
+    segments_with_breakdown = set(df.loc[df["model_series"].notna(), "segment"])
+
+    # A segment's own "... Zusammen" row is only a safe-to-drop duplicate if that
+    # segment also has individual model rows elsewhere. If a segment has NO
+    # breakdown at all, its "Zusammen" row is the only place its registrations
+    # are recorded, so it needs to be rescued into a normal, keepable row instead
+    # of being dropped for having no model_series.
+    cleaned_segment = df["segment"].str.replace(r"\s*ZUSAMMEN$", "", case=False, regex=True)
+    is_segment_total_row = df["model_series"].isna() & df["segment"].str.contains("zusammen", case=False, na=False)
+    is_sole_data_for_segment = is_segment_total_row & ~cleaned_segment.isin(segments_with_breakdown)
+
+    df.loc[is_sole_data_for_segment, "model_series"] = cleaned_segment[is_sole_data_for_segment]
+    df.loc[is_sole_data_for_segment, "segment"] = cleaned_segment[is_sole_data_for_segment]
+
+    # Drop rows where either car_registrations or model_series is None
     # Corresponds to footer rows / empty rows
     df = df.dropna(subset=["car_registrations", "model_series"])
 
