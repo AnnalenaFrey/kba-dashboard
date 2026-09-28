@@ -1,4 +1,5 @@
 from fastapi import FastAPI, BackgroundTasks, Depends, Query, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from typing import Annotated
@@ -38,6 +39,17 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+origins = ["http://localhost:5173"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
+
+
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
@@ -76,7 +88,7 @@ async def process_files(background_tasks: BackgroundTasks,
 async def process_status(status:dict = Depends(get_processing_status)):
     return status
 
-@app.get("/analytics/quaterly")
+@app.get("/analytics/quarterly")
 async def quarterly_comparison(year1: Annotated[int, Query(description="First year you want to compare")], 
                               quarter1: Annotated[int, Query(description="First quater you want to compare")], 
                               year2: Annotated[int, Query(description="Second year you want to compare")], 
@@ -89,7 +101,7 @@ async def quarterly_comparison(year1: Annotated[int, Query(description="First ye
         raise HTTPException(status_code=404, detail="No data found for one or more requested periods.")
 
     diff = total_period2 - total_period1
-    pct = (diff / total_period1) * 100 if total_period1 > 1 else None
+    pct = (diff / total_period1) * 100 if total_period1 > 0 else None
     return QuarterComparison(
         period1=QuarterPeriod(year=year1, quarter=quarter1, total=total_period1),
         period2 = QuarterPeriod(year=year2, quarter=quarter2, total=total_period2),
