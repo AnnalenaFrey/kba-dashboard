@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import { useQuery } from "@tanstack/react-query";
+import type { TimeSeriesEntry } from "./types";
+import TimeSeriesChart from "./TimeSeriesChart";
 
 function useBrands(){
   return useQuery<string[]>({
@@ -25,7 +27,7 @@ function useTimeSeries(segment: string, brand: string){
   if (segment !== "") params.append("segment", segment);
   if (brand !== "") params.append("brand", brand)
 
-  return useQuery<string[]>({
+  return useQuery<TimeSeriesEntry[]>({
     queryKey: ["timeseries", segment, brand],
     queryFn: () =>
       fetch(`http://127.0.0.1:8000/analytics/timeseries/?${params.toString()}`).then((res) => res.json()
@@ -33,7 +35,11 @@ function useTimeSeries(segment: string, brand: string){
   });
 }
 
-function SegmentDropdown({ segments, currentSegment, setSelectedSegment }){
+function SegmentDropdown({ segments, currentSegment, setSelectedSegment }: {
+  segments: string[];
+  currentSegment: string;
+  setSelectedSegment: Dispatch<SetStateAction<string>>;
+}){
   return(
     <select
       value = {currentSegment}
@@ -47,7 +53,11 @@ function SegmentDropdown({ segments, currentSegment, setSelectedSegment }){
   );
 }
 
-function BrandDropdown({ brands, currentBrand, setSelectedBrand }){
+function BrandDropdown({ brands, currentBrand, setSelectedBrand }: {
+  brands: string[];
+  currentBrand: string;
+  setSelectedBrand: Dispatch<SetStateAction<string>>;
+}){
   return(
     <select
       value = {currentBrand}
@@ -91,6 +101,9 @@ export default function App() {
           </li>
         ))}
       </ul>
+      <TimeSeriesChart
+        data={timeSeries.data}
+        />
     </div>
   );
 }
