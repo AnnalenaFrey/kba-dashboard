@@ -5,6 +5,7 @@ from .storage import Storage
 from .database import PostgresAdapter
 from .models.pydantic_models import Product, KBAFile
 from .processing import read_excel
+from .forecasting.prophet_model import prophet_forecast, build_forecast_records, save_forecast_records
 
 
 async def download_and_save_all(scraper: KBAScraper,
@@ -36,7 +37,7 @@ async def download_and_save_all(scraper: KBAScraper,
 async def process_all_files(db: PostgresAdapter, status: dict):
 
     status["state"] = "running"
-    status["error"] = "None"
+    status["error"] = None
 
     try: 
         raw_files = await db.get_raw_files()
@@ -52,6 +53,23 @@ async def process_all_files(db: PostgresAdapter, status: dict):
         status["state"] = "done"
         status["result"] = {"processed": processed, "out of": len(raw_files)}
 
+    except Exception as e:
+        status["state"] = "failed"
+        status["error"] = str(e)
+
+
+async def calculate_forecasts(db: PostgresAdapter,
+                              status: dict):
+    status["state"] = "running"
+    status["error"] = None
+    try:
+        data = await prophet_forecast(db=db)
+        records = build_forecast_records(data=data, method="prophet")
+        await save_forecast_records(records=records,db=db)
+
+        status["state"] = "done"
+        status["result"] = {"Records": records}
+    
     except Exception as e:
         status["state"] = "failed"
         status["error"] = str(e)

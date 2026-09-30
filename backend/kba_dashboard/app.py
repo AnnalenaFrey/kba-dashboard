@@ -5,12 +5,12 @@ from dotenv import load_dotenv
 from typing import Annotated
 
 
-from .dependecies import get_database, get_scraper, get_storage, get_scrape_status, get_config, get_product, get_base_url, get_processing_status
+from .dependecies import get_database, get_scraper, get_storage, get_scrape_status, get_config, get_product, get_base_url, get_processing_status, get_forecasting_status
 from .config import load_config
 from .database import PostgresAdapter
 from .storage import LocalStorage
 from .scraper import KBAScraper
-from .service import download_and_save_all, process_all_files
+from .service import download_and_save_all, process_all_files, calculate_forecasts
 from .models.pydantic_models import QuarterPeriod, QuarterComparison, TimeSeriesEntry
 
 @asynccontextmanager
@@ -32,6 +32,8 @@ async def lifespan(app: FastAPI):
     app.state.scrape_status = {"state": "idle", "result": None, "error": None}
 
     app.state.processing_status = {"state": "idle", "result": None, "error": None}
+
+    app.state.forecasting_status = {"state": "idle", "result": None, "error": None}
 
     yield
     await db.close()
@@ -73,7 +75,7 @@ async def download_all_files(background_tasks: BackgroundTasks,
     return {"status": "Started scraping process..."}
 
 @app.get("/files/status")
-async def download_status(status:dict = Depends(get_scrape_status)):
+async def download_status(status: dict = Depends(get_scrape_status)):
     return status
 
 @app.post("/process")
@@ -85,17 +87,17 @@ async def process_files(background_tasks: BackgroundTasks,
     return {"status": "Started processing files..."}
 
 @app.get("/process/status")
-async def process_status(status:dict = Depends(get_processing_status)):
+async def process_status(status: dict = Depends(get_processing_status)):
     return status
 
 @app.get("/analytics/quarterly")
 async def quarterly_comparison(year1: Annotated[int, Query(description="First year you want to compare")], 
-                              quarter1: Annotated[int, Query(description="First quater you want to compare")], 
+                              quarter1: Annotated[int, Query(description="First quarter you want to compare")], 
                               year2: Annotated[int, Query(description="Second year you want to compare")], 
                               quarter2: Annotated[int, Query(description="Second quarter you want to compare")],
                               db: PostgresAdapter = Depends(get_database)):
-    total_period1 = await db.get_quaterly_total(year=year1, quarter=quarter1)
-    total_period2 = await db.get_quaterly_total(year=year2, quarter=quarter2)
+    total_period1 = await db.get_quarterly_total(year=year1, quarter=quarter1)
+    total_period2 = await db.get_quarterly_total(year=year2, quarter=quarter2)
 
     if total_period1 == None or total_period2 == None:
         raise HTTPException(status_code=404, detail="No data found for one or more requested periods.")
@@ -124,3 +126,21 @@ async def get_brands(db: PostgresAdapter = Depends(get_database)):
 @app.get("/analytics/segments")
 async def get_segments(db: PostgresAdapter = Depends(get_database)):
     return await db.get_segments()
+
+#@app.get("/analytics/forecast/")
+#async def get_forecast(method: str, db: PostgresAdapter = Depends(get_database)):
+#    if (method == "prophet"):
+#        return await get_forecast(db=db)
+
+@app.post("/analytics/forecasts")
+async def forecasts(background_task: BackgroundTasks,
+                    db: PostgresAdapter = Depends(get_database),
+                    status: dict = Depends(get_forecasting_status)):
+    background_task.add_task(calculate_forecasts, db=db,
+                             status=status)
+
+    return {"status": "Started forecasting process..."}
+
+@app.get("/analytics/forecasts/status")
+async def get_forecast_status(status: dict = Depends(get_forecasting_status)):
+    return status
