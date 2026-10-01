@@ -310,4 +310,17 @@ class PostgresAdapter(DatabaseAdapter):
                     """
                 )
                 return await cur.fetchall()
-             
+
+    async def get_forecast(self, method: str) -> list[dict]:
+        async with self.apool.connection() as conn:
+            async with conn.cursor(row_factory=dict_row) as cur:
+                await cur.execute(
+                    f"""
+                    SELECT *
+                    FROM {self.schema}.fz11_forecast
+                    WHERE method = %s
+                    ORDER BY year, month ASC
+                """,
+                (method,)
+                )
+                return await cur.fetchall()

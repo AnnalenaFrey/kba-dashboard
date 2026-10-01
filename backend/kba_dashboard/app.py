@@ -127,10 +127,11 @@ async def get_brands(db: PostgresAdapter = Depends(get_database)):
 async def get_segments(db: PostgresAdapter = Depends(get_database)):
     return await db.get_segments()
 
-#@app.get("/analytics/forecast/")
-#async def get_forecast(method: str, db: PostgresAdapter = Depends(get_database)):
-#    if (method == "prophet"):
-#        return await get_forecast(db=db)
+@app.get("/analytics/forecast/")
+async def get_forecast(method: Annotated[str | None, Query(description="forecasting method")] = "prophet", 
+                       db: PostgresAdapter = Depends(get_database)):
+    if (method == "prophet"):
+        return await db.get_forecast(method=method)
 
 @app.post("/analytics/forecasts")
 async def forecasts(background_task: BackgroundTasks,
