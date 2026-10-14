@@ -27,7 +27,7 @@ A dashboard that scrapes, stores, processes, analyzes and forecasts German vehic
  * Ensure that Docker is installed
  * Ensure that uv is installed
  * Ensure that pnpm is installed
- * Clone the repository via `git clone git@github.com:AnnalenaFrey/kba-dashboard.git`
+ * Clone the repository via `ssh://git@gitlab.consileon.de:2222/at/ki-team/kba_dashboard.git`
  * Run `uv sync` to recreate the python environment
 
 ### Setup
