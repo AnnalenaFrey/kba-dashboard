@@ -1,4 +1,5 @@
 from starlette.concurrency import run_in_threadpool
+import asyncio
 
 from.scraper import KBAScraper
 from .storage import Storage
@@ -20,16 +21,32 @@ async def download_and_save_all(scraper: KBAScraper,
 
     try:
         files = await run_in_threadpool(scraper.discover_files, product=product)
-        print(f"Discovered files: {files}")
+        
         saved = 0
+        failed = []
+
         for file in files:
             if await db.check_if_file_exists(download_path=file.download_path):
                 continue
-            file.storage_location = await run_in_threadpool(scraper.download_file, base_url=base_url, kba_file=file, storage=storage)
-            await db.save_raw_file(file)
-            saved += 1
+
+            for attempt in range(3):
+                try:
+
+                    file.storage_location = await run_in_threadpool(scraper.download_file, base_url=base_url, kba_file=file, storage=storage)
+                    await db.save_raw_file(file)
+                    saved += 1
+                    break
+                except Exception as e:
+                    if attempt == 2:
+                        failed.append({"file": file.filename, "error": str(e)})
+                    else:
+                        await asyncio.sleep(2)
+
+            await asyncio.sleep(0.5)
+
         status["state"] = "done"
-        status["result"] = {"saved": saved, "total_discovered": len(files)}
+        status["result"] = {"saved": saved, "total_discovered": len(files), "failed": failed}
+    
     except Exception as e:
         status["state"] = "failed"
         status["error"] = str(e)

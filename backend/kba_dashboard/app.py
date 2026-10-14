@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from typing import Annotated
 
 
-from .dependecies import get_database, get_scraper, get_storage, get_scrape_status, get_config, get_product, get_base_url, get_processing_status, get_forecasting_status
+from .dependencies import get_database, get_scraper, get_storage, get_scrape_status, get_config, get_product, get_base_url, get_processing_status, get_forecasting_status
 from .config import load_config
 from .database import PostgresAdapter
 from .storage import LocalStorage
