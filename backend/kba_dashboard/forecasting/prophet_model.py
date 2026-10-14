@@ -1,8 +1,8 @@
-import asyncio
 from prophet import Prophet
 import pandas as pd
 import datetime
 
+from .data import get_historical_data
 from ..database import PostgresAdapter
 from ..models.pydantic_models import FZ11Forecast
 
@@ -10,12 +10,8 @@ from ..models.pydantic_models import FZ11Forecast
 
 async def prophet_forecast(db: PostgresAdapter):
 
-    data = await db.get_time_series_all_time()
-
-    for entry in data:
-        entry["ds"] = datetime.datetime(entry["year"], entry["month"], 1)
-
-    df = pd.DataFrame(data)
+    df = await get_historical_data(db=db)
+   
     df = df.rename(columns={"total_car_registrations": "y"})
 
     m = Prophet()
