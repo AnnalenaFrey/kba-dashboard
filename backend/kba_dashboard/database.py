@@ -33,7 +33,8 @@ class PostgresAdapter(DatabaseAdapter):
         async with self.apool.connection() as conn:
             table_names = [
                             "fz11_raw",
-                            "fz11_processed"
+                            "fz11_processed",
+                            "fz11_forecast"
                         ]
             await self.create_schema(conn, self.schema)
             await self.create_all_tables(conn)
@@ -109,6 +110,22 @@ class PostgresAdapter(DatabaseAdapter):
                 """
             )
 
+            await cur.execute(
+                f"""
+                CREATE TABLE IF NOT EXISTS {self.schema}.fz11_forecast(
+                id UUID PRIMARY KEY DEFAULT uuidv4(),
+                year int,
+                month int,
+                method text,
+                yhat float,
+                yhat_lower float,
+                yhat_upper float,
+                generated_at timestamptz DEFAULT now(),
+                UNIQUE (year, month, method)
+                )
+            """ 
+            )
+
     async def save_raw_file(self, file: KBAFile) -> dict:
         async with self.apool.connection() as conn:
             async with conn.cursor(row_factory=dict_row) as cur:
@@ -127,7 +144,7 @@ class PostgresAdapter(DatabaseAdapter):
         values = [
         (r.segment, r.model_series, r.brand, r.model, r.car_registrations, r.commercial_share, r.year, r.month, r.raw_file_id)
         for r in records
-    ]
+        ]
 
         async with self.apool.connection() as conn:
             async with conn.cursor() as cur:
@@ -138,6 +155,30 @@ class PostgresAdapter(DatabaseAdapter):
                 """,
                 values,
             )
+
+    async def save_forecasts(self, forecasts: list):
+
+        values = [
+            (f.year, f.month, f.method, f.yhat, f.yhat_lower, f.yhat_upper)
+            for f in forecasts
+        ]
+
+        async with self.apool.connection() as conn:
+            async with conn.cursor() as cur:
+                await cur.executemany(
+                    f"""
+                    INSERT INTO {self.schema}.fz11_forecast (year, month, method, yhat, yhat_lower, yhat_upper)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (year, month, method)
+                    DO UPDATE SET
+                        yhat = EXCLUDED.yhat,
+                        yhat_lower = EXCLUDED.yhat_lower,
+                        yhat_upper = EXCLUDED.yhat_upper,
+                        generated_at = now()
+                """,
+                values,
+                )
+
 
     async def get_raw_files(self) -> list[dict]:
         async with self.apool.connection() as conn:
@@ -181,7 +222,7 @@ class PostgresAdapter(DatabaseAdapter):
                 (filename,)
                 )
 
-    async def get_quaterly_total(self, year: int, quarter: int) -> int:
+    async def get_quarterly_total(self, year: int, quarter: int) -> int:
         start_month = (quarter - 1) * 3 + 1
         end_month = start_month + 2
 
@@ -233,6 +274,19 @@ class PostgresAdapter(DatabaseAdapter):
                 await cur.execute(query, params)
                 return await cur.fetchall()
 
+    async def get_time_series_all_time(self) -> list[dict]:
+        async with self.apool.connection() as conn:
+            async with conn.cursor(row_factory=dict_row) as cur:
+                await cur.execute(
+                    f"""
+                    SELECT year, month, SUM(car_registrations) as total_car_registrations
+                    FROM {self.schema}.fz11_processed
+                    GROUP BY year, month
+                    ORDER BY year DESC, month DESC
+                """
+                )
+                return await cur.fetchall()
+    
     async def get_brands(self) -> list[str]:
         async with self.apool.connection() as conn:
             async with conn.cursor(row_factory=scalar_row) as cur:
@@ -256,4 +310,17 @@ class PostgresAdapter(DatabaseAdapter):
                     """
                 )
                 return await cur.fetchall()
-             
+
+    async def get_forecast(self, method: str) -> list[dict]:
+        async with self.apool.connection() as conn:
+            async with conn.cursor(row_factory=dict_row) as cur:
+                await cur.execute(
+                    f"""
+                    SELECT *
+                    FROM {self.schema}.fz11_forecast
+                    WHERE method = %s
+                    ORDER BY year, month ASC
+                """,
+                (method,)
+                )
+                return await cur.fetchall()

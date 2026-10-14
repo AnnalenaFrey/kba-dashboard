@@ -29,6 +29,16 @@ class FZ11Record(BaseModel):
     month: int
     raw_file_id: UUID
 
+class FZ11Forecast(BaseModel):
+    id: UUID | None = None
+    year: int
+    month: int
+    method: str
+    yhat: float
+    yhat_lower: float | None = None
+    yhat_upper: float | None = None
+    generated_at: datetime | None = None
+
 class QuarterPeriod(BaseModel):
     year: int
     quarter: int

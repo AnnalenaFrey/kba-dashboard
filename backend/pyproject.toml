@@ -10,6 +10,7 @@ dependencies = [
     "matplotlib>=3.11.1",
     "openpyxl>=3.1.5",
     "pandas>=3.0.5",
+    "prophet>=1.4.0",
     "psycopg[binary,pool]>=3.3.4",
     "pyaml-env>=1.2.2",
     "pydantic>=2.13.4",
@@ -26,5 +27,13 @@ kba-dashboard = "kba_dashboard:main"
 requires = ["setuptools >= 77.0.3"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools.packages.find]
+include = ["kba_dashboard*"]
+
 [tool.fastapi]
 entrypoint = "kba_dashboard.app:app"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]

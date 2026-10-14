@@ -45,7 +45,7 @@ class KBAScraper:
 
         return kba_files_list
 
-    def download_file(self, base_url: str, kba_file: str, storage: Storage) -> None:
+    def download_file(self, base_url: str, kba_file: KBAFile, storage: Storage) -> None:
 
         download_url = urljoin(base_url, kba_file.download_path)
         response = self._get(download_url)

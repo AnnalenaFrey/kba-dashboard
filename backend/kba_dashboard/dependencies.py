@@ -35,3 +35,6 @@ def get_product(product_name: str, config: dict = Depends(get_config)) -> Produc
 
 def get_base_url(config: dict = Depends(get_config))-> str:
     return config["base_url"]
+
+def get_forecasting_status(request: Request) -> dict:
+    return request.app.state.forecasting_status
