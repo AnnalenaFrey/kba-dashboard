@@ -24,7 +24,7 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
 
 def train_test_split(df: pd.DataFrame, test_size: int = 3) -> tuple[pd.DataFrame, pd.DataFrame]:
     train = df.iloc[:-test_size]
-    test = df.iloc[test_size:]
+    test = df.iloc[-test_size:]
     return train, test
 
 
